@@ -480,7 +480,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 func main() {
 	Init()
 	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
-	ebiten.SetWindowTitle("Animation (Ebitengine Demo)")
+	ebiten.SetWindowTitle("Avoid the Enemies")
 	g := &Game{}
 	g.init()
 	if err := ebiten.RunGame(g); err != nil {
