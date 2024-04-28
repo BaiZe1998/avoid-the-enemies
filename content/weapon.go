@@ -34,13 +34,13 @@ func InitWeapon() {
 		&MeleeWeapon{
 			Type:  "sickle",
 			Image: sickleImage,
-			spin:  2 * math.Pi / 60, // 每帧转动的角度（弧度）
+			spin:  1.75 * math.Pi / 60, // 每帧转动的角度（弧度）
 			angle: 0,
 		},
 		&MeleeWeapon{
 			Type:  "sword",
 			Image: swordImage,
-			spin:  3 * math.Pi / 60, // 每帧转动的角度（弧度）
+			spin:  2 * math.Pi / 60, // 每帧转动的角度（弧度）
 			angle: 0,
 		},
 		&RangedWeapon{

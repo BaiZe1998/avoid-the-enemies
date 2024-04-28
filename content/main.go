@@ -120,8 +120,8 @@ func (g *Game) Update() error {
 			g.player.Move(0, g.player.speed)
 			g.player.directIdx = 1
 		}
-		// 按下 q 键可以释放技能
-		if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+		// 按下 q 键可以释放技能 && 距离上一次释放技能时间大于技能冷却时间
+		if inpututil.IsKeyJustPressed(ebiten.KeyQ) && time.Since(g.player.skillTime) > time.Second*5 {
 			if g.player.score >= 20 {
 				g.player.isSkill = true
 				g.player.skillTime = time.Now()
