@@ -1,9 +1,14 @@
 # avoid-the-enemies
 这个世界危机四伏！
 
-环境: `>=go1.21.3`
+运行方式: 
+```
+// 开发者
+环境: >=go1.21.3，执行：go run ./content
 
-运行方式: `go run ./content`
+// 游客
+./avoid-the-enemies
+```
 
 按空格开始游戏！
 
