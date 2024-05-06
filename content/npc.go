@@ -1,9 +1,11 @@
 package main
 
 import (
-	"golang.org/x/image/math/f64"
+	"avoid-the-enemies/content/config"
 	"math/rand"
 	"time"
+
+	"golang.org/x/image/math/f64"
 )
 
 type Player struct {
@@ -22,6 +24,10 @@ type Player struct {
 	skillFrame        int       // 技能的帧数
 	skillTime         time.Time // 技能释放的时间
 	startTime         time.Time // 游戏开始的时间
+
+	hasSteadyWeaponPosition bool
+	steadyWeaponId          int
+	steadyWeaponPosition    f64.Vec2 // 仅对怪物生效，一定要前往的位置
 }
 
 // Invincible 是否无敌
@@ -32,8 +38,12 @@ func (p *Player) Invincible() bool {
 func (p *Player) Move(dx, dy float64) {
 	p.x += dx
 	p.y += dy
-	p.x = clamp(p.x, -frameWidth/2, screenWidth-frameWidth/2)
-	p.y = clamp(p.y, -frameHeight/2, screenHeight-frameHeight/2)
+	p.x = clamp(p.x, -config.FrameWidth/2, config.ScreenWidth-config.FrameWidth/2)
+	p.y = clamp(p.y, -config.FrameHeight/2, config.ScreenHeight-config.FrameHeight/2)
+
+	if p.hasSteadyWeaponPosition == true && p.x == p.steadyWeaponPosition[0] && p.y == p.steadyWeaponPosition[1] {
+		p.hasSteadyWeaponPosition = false
+	}
 }
 
 func clamp(v, min, max float64) float64 {
@@ -53,11 +63,11 @@ func GenerateMonster(g *Game) {
 		g.monsters[g.uniqueId] = &Player{
 			id:        g.uniqueId,
 			count:     g.player.count,
-			x:         rand.Float64() * (screenWidth - frameWidth/2),
-			y:         rand.Float64() * (screenHeight - frameHeight/2),
+			x:         rand.Float64() * (config.ScreenWidth - config.FrameWidth/2),
+			y:         rand.Float64() * (config.ScreenHeight - config.FrameHeight/2),
 			speed:     1.0 / 180,
-			weaponX:   frameWidth / 2,
-			weaponY:   frameHeight / 2,
+			weaponX:   config.FrameWidth / 2,
+			weaponY:   config.FrameHeight / 2,
 			directIdx: 0,
 		}
 		g.monsterTimer[g.uniqueId] = 0
