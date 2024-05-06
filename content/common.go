@@ -1,6 +1,7 @@
 package main
 
 import (
+	"avoid-the-enemies/content/config"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"math"
 )
@@ -26,5 +27,5 @@ var (
 )
 
 func IsTouch(x1, y1, x2, y2 float64) bool {
-	return math.Abs(x1-x2) < frameWidth/2 && math.Abs(y1-y2) < frameHeight/2
+	return math.Abs(x1-x2) < config.FrameWidth/2 && math.Abs(y1-y2) < config.FrameHeight/2
 }

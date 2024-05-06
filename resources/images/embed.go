@@ -19,32 +19,8 @@ import (
 )
 
 var (
-	//go:embed ebiten.png
-	Ebiten_png []byte
-
-	//go:embed fiveyears.jpg
-	FiveYears_jpg []byte
-
-	//go:embed gophers.jpg
-	Gophers_jpg []byte
-
 	//go:embed runner.png
 	Runner_png []byte
-
-	//go:embed smoke.png
-	Smoke_png []byte
-
-	//go:embed spritesheet.png
-	Spritesheet_png []byte
-
-	//go:embed tile.png
-	Tile_png []byte
-
-	//go:embed tiles.png
-	Tiles_png []byte
-
-	//go:embed ui.png
-	UI_png []byte
 
 	//go:embed sickle.png
 	Sickle_png []byte
@@ -60,9 +36,6 @@ var (
 
 	//go:embed skill.png
 	Skill_png []byte
-
-	//go:embed skill.jpg
-	Skill_jpg []byte
 
 	//go:embed fire.png
 	Fire_png []byte

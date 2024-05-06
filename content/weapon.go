@@ -1,17 +1,20 @@
 package main
 
 import (
-	raudio "avoid-the-enemies/resources/audio"
+	"avoid-the-enemies/content/config"
 	"bytes"
+	"image/color"
+	"math"
+	"math/rand"
+	"time"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"golang.org/x/image/math/f64"
-	"image/color"
-	"math"
-	"math/rand"
-	"time"
+
+	raudio "avoid-the-enemies/resources/audio"
 )
 
 var (
@@ -48,7 +51,7 @@ func InitWeapon() {
 			Image:      akImage,
 			bullet:     bulletImage,
 			speed:      0.5,
-			distance:   screenWidth,
+			distance:   config.ScreenWidth,
 			damage:     25,
 			shotPlayer: p,
 		},
@@ -126,7 +129,18 @@ func (w *RangedWeapon) Copy() *RangedWeapon {
 	}
 }
 
-func (w *RangedWeapon) Fire(g *Game, player *Player) {
+type FireOption func(s *Suspend)
+
+func WithBulletDirection(x, y float64) FireOption {
+	return func(s *Suspend) {
+		s.direction = &SuspendDirection{
+			x: x,
+			y: y,
+		}
+	}
+}
+
+func (w *RangedWeapon) Fire(g *Game, player *Player, options ...FireOption) {
 	if err := w.shotPlayer.Rewind(); err != nil {
 		return
 	}
@@ -142,17 +156,27 @@ func (w *RangedWeapon) Fire(g *Game, player *Player) {
 		directIndex: player.directIdx,
 		PlayerID:    player.id,
 	}
+
+	for _, option := range options {
+		option(bullet)
+	}
+
 	g.uniqueId++
 	g.suspends[g.uniqueId] = bullet
 }
 
 type Suspend struct {
-	pos         f64.Vec2      // 当前位置
-	rangeWeapon *RangedWeapon // 武器
-	from        f64.Vec2      // 发射子弹的位置
-	directIndex int           // 子弹的方向
-	time        int           // 子弹的生命周期
-	PlayerID    int           // 子弹的拥有者
+	pos         f64.Vec2          // 当前位置
+	rangeWeapon *RangedWeapon     // 武器
+	from        f64.Vec2          // 发射子弹的位置
+	directIndex int               // 子弹的方向
+	time        int               // 子弹的生命周期
+	PlayerID    int               // 子弹的拥有者
+	direction   *SuspendDirection // 子弹运动的方向向量
+}
+
+type SuspendDirection struct {
+	x, y float64
 }
 
 func GenerateWeapon(g *Game) {
@@ -166,11 +190,11 @@ func GenerateWeapon(g *Game) {
 				newWeapon := weapon.(*MeleeWeapon).Copy()
 				// 使用指针类型有拷贝的bug，当两个人获得同一把武器的时候，旋转会画两次，所以看起来快了一倍
 				g.weapons[g.uniqueId] = newWeapon
-				g.weaponPosition[g.uniqueId] = f64.Vec2{rand.Float64() * (screenWidth - frameWidth/2), rand.Float64() * (screenHeight - frameHeight/2)}
+				g.weaponPosition[g.uniqueId] = f64.Vec2{rand.Float64() * (config.ScreenWidth - config.FrameWidth/2), rand.Float64() * (config.ScreenHeight - config.FrameHeight/2)}
 			case *RangedWeapon:
 				newWeapon := weapon.(*RangedWeapon).Copy()
 				g.weapons[g.uniqueId] = newWeapon
-				g.weaponPosition[g.uniqueId] = f64.Vec2{rand.Float64() * (screenWidth - frameWidth/2), rand.Float64() * (screenHeight - frameHeight/2)}
+				g.weaponPosition[g.uniqueId] = f64.Vec2{rand.Float64() * (config.ScreenWidth - config.FrameWidth/2), rand.Float64() * (config.ScreenHeight - config.FrameHeight/2)}
 			}
 		}
 	}
@@ -180,8 +204,15 @@ func GenerateWeapon(g *Game) {
 func SuspendMove(g *Game) {
 	for id, s := range g.suspends {
 		s.time++
-		s.pos[0] += directions[s.directIndex].dx * s.rangeWeapon.speed * float64(s.time)
-		s.pos[1] += directions[s.directIndex].dy * s.rangeWeapon.speed * float64(s.time)
+
+		if s.direction != nil {
+			s.pos[0] += s.direction.x * s.rangeWeapon.speed * float64(s.time)
+			s.pos[1] += s.direction.y * s.rangeWeapon.speed * float64(s.time)
+		} else {
+			s.pos[0] += directions[s.directIndex].dx * s.rangeWeapon.speed * float64(s.time)
+			s.pos[1] += directions[s.directIndex].dy * s.rangeWeapon.speed * float64(s.time)
+		}
+
 		// 如果子弹超出射程，删除子弹
 		if math.Abs(s.pos[0]-s.from[0]) > s.rangeWeapon.distance || math.Abs(s.pos[1]-s.from[1]) > s.rangeWeapon.distance {
 			delete(g.suspends, id)
@@ -189,7 +220,7 @@ func SuspendMove(g *Game) {
 		}
 		// 如果子弹碰撞到怪物，怪物消失
 		for _, m := range g.monsters {
-			if m.id != s.PlayerID && IsTouch(s.pos[0], s.pos[1], m.x+frameWidth/2, m.y+frameHeight/2) {
+			if m.id != s.PlayerID && IsTouch(s.pos[0], s.pos[1], m.x+config.FrameWidth/2, m.y+config.FrameHeight/2) {
 				delete(g.suspends, id)
 				delete(g.monsters, m.id)
 				g.player.score++
@@ -197,11 +228,11 @@ func SuspendMove(g *Game) {
 			}
 		}
 		// 如果子弹碰撞到玩家，且玩家不是无敌状态，玩家减血
-		if s.PlayerID != g.player.id && !g.player.Invincible() && IsTouch(s.pos[0], s.pos[1], g.player.x+frameWidth/2, g.player.y+frameHeight/2) {
+		if s.PlayerID != g.player.id && !g.player.Invincible() && IsTouch(s.pos[0], s.pos[1], g.player.x+config.FrameWidth/2, g.player.y+config.FrameHeight/2) {
 			g.player.health -= s.rangeWeapon.damage
 			delete(g.suspends, id)
 			if g.player.health <= 0 {
-				g.mode = ModeGameOver
+				g.mode = config.ModeGameOver
 			}
 		}
 	}
