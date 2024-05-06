@@ -355,7 +355,7 @@ func (g *Game) resolveMonsters() error {
 		}
 
 		// 计算当前位置到目标位置的方向向量
-		directionX, directionY := utils.ReNormalize(utils.Normalize(target[0]-monster.x, target[1]-monster.y))
+		directionX, directionY := utils.Normalize(target[0]-monster.x, target[1]-monster.y)
 
 		if monster.weapon == nil {
 			// 在移动轨迹上进行插值
@@ -363,11 +363,45 @@ func (g *Game) resolveMonsters() error {
 		}
 	}
 
+	if len(chasingMonsters) == 0 {
+		return nil
+	}
+
+	// 计算所有追逐主角的怪物的中心
+	centerX := 0.0
+	centerY := 0.0
+	for _, monster := range chasingMonsters {
+		centerX += monster.x
+		centerY += monster.y
+	}
+
+	centerX /= float64(len(chasingMonsters))
+	centerY /= float64(len(chasingMonsters))
+
 	for id, monster := range chasingMonsters {
 		target := g.monsterTarget[id]
 
+		// 计算中心点在怪物和玩家之间的投影
+		projectionX, projectionY := utils.GetProjection(monster.x, monster.y, g.player.x, g.player.y, centerX, centerY)
+		distance2Monster := utils.GetDistance(projectionX, projectionY, monster.x, monster.y)
+		distance2Player := utils.GetDistance(projectionX, projectionY, g.player.x, g.player.y)
+		distance := utils.GetDistance(monster.x, monster.y, g.player.x, g.player.y)
+
+		// 投影点在怪物之后
+		var correctX, correctY float64
+		if distance2Player > distance2Monster && distance2Player > distance {
+			correctX, correctY = utils.Normal(monster.x-projectionX, monster.y-projectionY)
+			correctX *= 100
+			correctY *= 100
+		}
+
 		// 计算当前位置到目标位置的方向向量
-		directionX, directionY := utils.ReNormalize(utils.Normalize(target[0]-monster.x, target[1]-monster.y))
+		directionX, directionY := utils.Normalize(target[0]-monster.x, target[1]-monster.y)
+		log.Println("怪物移动量", id, directionX, directionY)
+
+		directionX += correctX
+		directionY += correctY
+		log.Println("怪物修正后移动量", id, directionX, directionY)
 
 		// Flocking
 		for otherId, otherMonster := range chasingMonsters {
@@ -394,7 +428,7 @@ func (g *Game) resolveMonsters() error {
 		target := g.monsterTarget[id]
 
 		// 计算当前位置到目标位置的方向向量
-		directionX, directionY := utils.ReNormalize(utils.Normalize(target[0]-monster.x, target[1]-monster.y))
+		directionX, directionY := utils.Normalize(target[0]-monster.x, target[1]-monster.y)
 
 		if monster.weapon != nil {
 			switch monster.weapon.(type) {
